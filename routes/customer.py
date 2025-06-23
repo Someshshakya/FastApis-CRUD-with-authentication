@@ -1,11 +1,14 @@
-from fastapi import APIRouter, HTTPException, status, Body
+from fastapi import APIRouter, HTTPException, status, Body, BackgroundTasks
 from typing import Optional
+from fastapi import Depends
 import logging
+
+from utils.email import send_email
 from models.customer import Customer, CustomerInDB
 from database.mongo import customer_collection
 from auth import create_access_token
 from models.auth import UserLogin
-from fastapi import Depends
+
 
 
 # Configure logging
@@ -17,7 +20,7 @@ router = APIRouter()
 #create user 
 
 @router.post("/user",response_model=CustomerInDB, status_code=status.HTTP_201_CREATED)
-async def sign_up_user(user: Customer):
+async def sign_up_user(user: Customer, background_tasks:BackgroundTasks):
   try:
     data_to_store = user.model_dump()
     # Validate role and role_text combination
@@ -52,7 +55,11 @@ async def sign_up_user(user: Customer):
         )
     
     logger.info(f"Created user: {created_customer}")
-    
+     # 📩 Send welcome email in background
+    subject = "Welcome to Our FastApis App With Somesh!"
+    body = f"Hi {created_customer["first_name"]},\n\nThanks for signing up with us!"
+    background_tasks.add_task(send_email, created_customer["email"], subject, body)
+
     # Create response model
     response = CustomerInDB(
         _id=created_customer["_id"],

@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, status, Body, Depends, Header
-from models.product import Product, ProductInDB
+from fastapi import APIRouter, HTTPException, status, Body, Depends, Header,Query
+from models.product import Product, ProductInDB, PaginatedProductResponse
 from database.mongo import product_collection
 from exceptions import NotFoundException, BadRequestException, DatabaseException
 from bson import ObjectId
@@ -201,27 +201,36 @@ async def update_product(
         logger.error(f"Unexpected error: {str(e)}")
         raise DatabaseException(str(e))
 #get all products
-@router.get("/",response_model=list[ProductInDB])
-async def get_all_products(  user=Depends(require_role(["admin","user"]))):
+@router.get("/", response_model=PaginatedProductResponse)
+async def get_all_products(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, le=100),
+    user=Depends(require_role(["admin", "user"]))
+):
     try:
-        cursor = product_collection.find({})
-        products = await cursor.to_list(length=None)
+        cursor = product_collection.find({}).skip(skip).limit(limit)
+        products = await cursor.to_list(length=limit)
 
-        response = []
-        # for loop to make it pydantic model
+        response = [
+            ProductInDB(**product).model_dump(by_alias=True)
+            for product in products
+        ]
 
-        # for product in products:
-        #     print("Product Raw:", product)
-        #     print("Converted:", ProductInDB(**product).model_dump(by_alias=True))
-        #     response.append(ProductInDB(**product).model_dump(by_alias=True))
-        response = [ProductInDB(**product).model_dump(by_alias=True) for product in products] # list comprehensive
-        print(response)
         if not response:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No products found"
             )
-        return response
+
+        total = await product_collection.count_documents({})
+
+        return {
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "data": response
+        }
+
     except Exception as e:
         logger.error(f"Error while getting the products: {str(e)}")
         raise HTTPException(

@@ -77,3 +77,8 @@ class ProductInDB(Product):
         json_encoders = {
             ObjectId: str
         }
+class PaginatedProductResponse(BaseModel):
+    total: int
+    skip: int
+    limit: int
+    data: list[ProductInDB]

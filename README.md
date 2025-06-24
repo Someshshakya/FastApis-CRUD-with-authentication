@@ -1,15 +1,16 @@
 # FastAPI Project
 
 ## Overview
-This project is a FastAPI-based backend application that provides RESTful APIs for managing products and customers, with authentication and role-based access control. It uses MongoDB as the database and includes logging middleware for request tracking.
+This project is a FastAPI-based backend application that provides RESTful APIs for managing products and customers, with authentication and role-based access control. It uses MongoDB as the database and includes logging middleware for request tracking, robust exception handling, and email notifications on user signup.
 
 ## Features
 - **Product Management**: Create, update, retrieve, and delete products.
 - **Customer Management**: Register users, login for different roles (customer, admin, store).
 - **Authentication**: JWT-based authentication for secure access.
 - **Role-Based Access Control**: Different endpoints for admin, store, and user roles.
-- **Logging Middleware**: Logs all incoming requests and responses with timing.
-- **Exception Handling**: Custom exception handlers for 404, 400, and 500 errors.
+- **Logging Middleware**: Logs all incoming requests and responses with timing and details.
+- **Exception Handling**: Custom exception handlers for 404, 400, and 500 errors, providing clear error responses.
+- **Email Notification**: Sends an email notification to the user upon successful signup.
 
 ## Project Structure
 ```
@@ -61,6 +62,11 @@ This project is a FastAPI-based backend application that provides RESTful APIs f
    ```env
    MONGO_URI=mongodb://localhost:27017
    SECRET_KEY=your_secret_key
+   # Add email configuration if required, e.g.:
+   EMAIL_HOST=smtp.example.com
+   EMAIL_PORT=587
+   EMAIL_USER=your@email.com
+   EMAIL_PASSWORD=yourpassword
    ```
 
 5. **Run the application**
@@ -76,7 +82,7 @@ This project is a FastAPI-based backend application that provides RESTful APIs f
 - `DELETE /product/{product_id}` (admin): Delete a product
 
 ### Customer Endpoints (`/customer`)
-- `POST /customer/user`: Register a new user
+- `POST /customer/user`: Register a new user (triggers email notification)
 - `POST /customer/login/customer`: Login as customer
 - `POST /customer/login/admin`: Login as admin
 - `POST /customer/login/store`: Login as store
@@ -90,7 +96,13 @@ This project is a FastAPI-based backend application that provides RESTful APIs f
 - Roles supported: `user`, `admin`, `store`.
 
 ## Logging
-All requests and responses are logged with method, path, body, status, and processing time.
+All requests and responses are logged with method, path, body, status, and processing time using a custom logging middleware.
+
+## Exception Handling
+Custom exception handlers provide clear and consistent error responses for 404 (Not Found), 400 (Bad Request), and 500 (Internal Server Error) cases.
+
+## Email Notification
+When a user successfully signs up, an email notification is sent to their registered email address. Ensure your environment variables are set for email configuration.
 
 ## Database
 - MongoDB is used for storing products and customers.

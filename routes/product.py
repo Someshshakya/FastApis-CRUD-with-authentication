@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Body, Depends, Header,Query
 from models.product import Product, ProductInDB, PaginatedProductResponse
-from database.mongo import product_collection
+from database.mongo import get_db
 from exceptions import NotFoundException, BadRequestException, DatabaseException
 from bson import ObjectId
+from pymongo.database import Database
 import logging
 from typing import Optional
 from pydantic import BaseModel
@@ -42,7 +43,7 @@ def product_helper(product) -> dict:
 #create a product
 
 @router.post("/", response_model=ProductInDB, status_code=status.HTTP_201_CREATED)
-async def create_product(product: Product,user=Depends(require_role(["admin","store"]))):
+async def create_product(product: Product, db: Database = Depends(get_db), user=Depends(require_role(["admin","store","user"]))):
     try:
         logger.info(f"Received product data: {product.model_dump()}")
         
@@ -51,11 +52,11 @@ async def create_product(product: Product,user=Depends(require_role(["admin","st
         logger.info(f"Converted to dict: {product_dict}")
         
         # Insert the product
-        result = await product_collection.insert_one(product_dict)
+        result = await db["products"].insert_one(product_dict)
         logger.info(f"Insert result: {result.inserted_id}")
         
         # Fetch the created product
-        created_product = await product_collection.find_one({"_id": result.inserted_id})
+        created_product = await db["products"].find_one({"_id": result.inserted_id})
         if not created_product:
             logger.error("Failed to retrieve created product")
             raise HTTPException(
@@ -161,6 +162,7 @@ async def create_product(product: Product,user=Depends(require_role(["admin","st
 async def update_product(
     product_id: str,
     data: UpdateProduct = Body(...),
+    db: Database = Depends(get_db),
     user=Depends(require_role(["admin","store"]))
 ):
     try:
@@ -173,7 +175,7 @@ async def update_product(
         if not update_data:
             raise BadRequestException("No valid fields to update. Please provide at least one field")
 
-        result = await product_collection.update_one(
+        result = await db["products"].update_one(
             {"_id": ObjectId(product_id)},
             {"$set": update_data}
         )
@@ -184,7 +186,7 @@ async def update_product(
         if result.modified_count == 0:
             raise BadRequestException("No changes made to the product")
 
-        updated_product = await product_collection.find_one({"_id": ObjectId(product_id)})
+        updated_product = await db["products"].find_one({"_id": ObjectId(product_id)})
         if not updated_product:
             raise NotFoundException("Product not found after update")
 
@@ -205,10 +207,11 @@ async def update_product(
 async def get_all_products(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, le=100),
+    db: Database = Depends(get_db),
     user=Depends(require_role(["admin", "user"]))
 ):
     try:
-        cursor = product_collection.find({}).skip(skip).limit(limit)
+        cursor = db["products"].find({}).skip(skip).limit(limit)
         products = await cursor.to_list(length=limit)
 
         response = [
@@ -222,7 +225,7 @@ async def get_all_products(
                 detail="No products found"
             )
 
-        total = await product_collection.count_documents({})
+        total = await db["products"].count_documents({})
 
         return {
             "total": total,
@@ -243,10 +246,11 @@ async def get_all_products(
 @router.delete("/{product_id}")
 async def delete_product(
     product_id: str,
+    db: Database = Depends(get_db),
     user=Depends(require_role(["admin"]))
 ):
     try:
-        result = await product_collection.delete_one({"_id": ObjectId(product_id)})
+        result = await db["products"].delete_one({"_id": ObjectId(product_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Product not found")
         return {"status": "success", "message": "Product deleted"}

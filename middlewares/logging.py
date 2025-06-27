@@ -21,9 +21,13 @@ logging.basicConfig(level=logging.INFO,format="%(asctime)s - %(levelname)s -%(me
 class LoggingMIddleware(BaseHTTPMiddleware):
     async def dispatch(self,request:Request, call_next):
         start_time = time.time()
-    #read the body of the request (cloneable)
+        # read the body of the request (cloneable)
         body = await request.body()
-        logger.info(f">> {request.method} {request.url.path} | Body: {body.decode('utf-8') if body else '{}'} ")
+        try:
+            body_str = body.decode('utf-8') if body else '{}'
+        except UnicodeDecodeError:
+            body_str = '[binary data or non-UTF8]'
+        logger.info(f">> {request.method} {request.url.path} | Body: {body_str} ")
         response = await call_next(request)
 
         process_time = time.time() - start_time

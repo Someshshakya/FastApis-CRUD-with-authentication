@@ -10,15 +10,10 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-try:
-    client = AsyncIOMotorClient(MONGO_URI)
-    # Verify the connection
-    client.admin.command('ping')
-    logger.info("Successfully connected to MongoDB!")
-except Exception as e:
-    logger.error(f"Failed to connect to MongoDB: {str(e)}")
-    raise
 
+client = AsyncIOMotorClient(MONGO_URI)
 db = client["fastapi_db"]
-product_collection = db["products"]
-customer_collection = db['customers']
+customer_collection = db["customers"]
+
+def get_db():
+    return db

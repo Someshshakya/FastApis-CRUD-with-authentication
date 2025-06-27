@@ -34,15 +34,16 @@ class PyObjectId(ObjectId):
 
 
 class Customer(BaseModel):
-    first_name: str = Field(...,example="Somesh")
-    last_name: str = Field(...,example="Shakya")
-    email: str = Field(...,example="somesh@email.com")
-    phone: str = Field(...,example="8373738383")
-    country_code:str = Field(...,example="+91")
-    password: str = Field(..., example="password123")
-    role: str = Field(..., example="customer", description="customer, admin, or store")
-    class Config:
-        json_schema_extra = {
+    first_name: str
+    last_name: str
+    email: str
+    phone: str
+    country_code: str
+    password: str
+    role: str
+
+    model_config = {
+        "json_schema_extra": {
             "examples": [
                 {
                     "first_name": "Somesh",
@@ -73,14 +74,16 @@ class Customer(BaseModel):
                 }
             ]
         }
+    }
 
 
 class CustomerInDB(Customer):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {
+    model_config = {
+        "populate_by_name": True,
+        "arbitrary_types_allowed": True,
+        "json_encoders": {
             ObjectId: str
         }
+    }

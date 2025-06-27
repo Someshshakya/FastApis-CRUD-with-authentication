@@ -36,18 +36,19 @@ class PyObjectId(ObjectId):
 
 # ✅ Base Product schema (request body)
 class Product(BaseModel):
-    name: str = Field(..., example="Laptop")
-    price: float = Field(..., example=999.99)
-    in_stock: bool = Field(default=True, example=True)
+    name: str
+    price: float
+    in_stock: bool = True
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "Laptop",
                 "price": 999.99,
                 "in_stock": True
             }
         }
+    }
 
 # # updateProduct 
 # class UpdateProduct(BaseModel):
@@ -71,12 +72,14 @@ class Product(BaseModel):
 class ProductInDB(Product):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {
+    model_config = {
+        "populate_by_name": True,
+        "arbitrary_types_allowed": True,
+        "json_encoders": {
             ObjectId: str
         }
+    }
+
 class PaginatedProductResponse(BaseModel):
     total: int
     skip: int

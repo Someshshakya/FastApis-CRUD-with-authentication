@@ -5,7 +5,9 @@ from fastapi.responses import JSONResponse
 
 from routes.product import router as ProductRouter
 from routes.customer import router as CustomerRouter
+from routes.uploadFile import router as FileUpload
 from middlewares.logging import LoggingMIddleware
+
 
 from exceptions import NotFoundException, BadRequestException, DatabaseException
 
@@ -17,6 +19,7 @@ app = FastAPI()
 app.add_middleware(LoggingMIddleware)
 app.include_router(ProductRouter,tags=["Products"],prefix="/product")
 app.include_router(CustomerRouter,tags=["Customer"])
+app.include_router(FileUpload,tags=["FileUpload"])
 # Exception handling 
 @app.exception_handler(NotFoundException)
 async def not_found_handler(request: Request, exc: NotFoundException):
